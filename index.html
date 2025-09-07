@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TFL Browser Prototype</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      flex-direction: row;
+    }
+    .panel {
+      flex: 1;
+      padding: 10px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .offense { background: #003F87; color: white; }
+    .defense { background: #C8102E; color: white; }
+    .center { background: #f0f0f0; color: #003F87; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+
+    h2 { margin: 10px 0; }
+
+    .dice-results { font-size: 1.5em; margin: 10px 0; }
+    button { margin: 5px; padding: 10px 20px; font-size: 1em; cursor: pointer; }
+
+    .cooldown { display: flex; gap: 10px; margin: 15px 0; }
+    .slot {
+      width: 60px; height: 90px;
+      border: 2px solid #333;
+      display: flex; align-items: center; justify-content: center;
+      background: white;
+      font-size: 0.8em;
+    }
+
+    .momentum {
+      display: flex; gap: 5px; margin: 10px 0;
+    }
+    .momentum-token {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: gray;
+    }
+    .active { background: gold; }
+  </style>
+</head>
+<body>
+  <div class="panel offense">
+    <h2>OFFENSE</h2>
+    <button onclick="rollDice('offense')">Roll Dice</button>
+    <div id="offenseResult" class="dice-results">-</div>
+  </div>
+
+  <div class="panel center">
+    <h2>TFL Prototype</h2>
+    <!-- Momentum -->
+    <div>
+      <h3>Momentum</h3>
+      <div class="momentum" id="momentumTrack"></div>
+    </div>
+
+    <!-- Cooldown Track -->
+    <div>
+      <h3>Cooldown Track</h3>
+      <div class="cooldown" id="cooldownTrack">
+        <div class="slot">1</div>
+        <div class="slot">2</div>
+        <div class="slot">3</div>
+        <div class="slot">4</div>
+        <div class="slot">5</div>
+      </div>
+    </div>
+
+    <!-- Dice Roller -->
+    <div>
+      <h3>Yardage Roll</h3>
+      <button onclick="rollYardage()">Roll d10</button>
+      <div id="yardageResult" class="dice-results">-</div>
+    </div>
+  </div>
+
+  <div class="panel defense">
+    <h2>DEFENSE</h2>
+    <button onclick="rollDice('defense')">Roll Dice</button>
+    <div id="defenseResult" class="dice-results">-</div>
+  </div>
+
+  <script>
+    // Momentum system
+    const momentumEl = document.getElementById('momentumTrack');
+    let momentum = 0; // start at 0
+    function renderMomentum() {
+      momentumEl.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        let token = document.createElement('div');
+        token.classList.add('momentum-token');
+        if (i < momentum) token.classList.add('active');
+        momentumEl.appendChild(token);
+      }
+    }
+    renderMomentum();
+
+    // Cooldown system
+    const cooldownSlots = Array.from(document.querySelectorAll('#cooldownTrack .slot'));
+    function shiftCooldown(playName) {
+      // shift left
+      for (let i = 0; i < 4; i++) {
+        cooldownSlots[i].textContent = cooldownSlots[i+1].textContent;
+      }
+      cooldownSlots[4].textContent = playName || "Play";
+    }
+
+    // Dice roller
+    function rollDice(side) {
+      const ol = Math.ceil(Math.random() * 4); // d4
+      const rb = Math.ceil(Math.random() * 6); // d6
+      const wr = Math.ceil(Math.random() * 8); // d8
+      const total = ol + rb + wr;
+      document.getElementById(side + 'Result').textContent =
+        `OL d4:${ol}, RB d6:${rb}, WR d8:${wr} → Total: ${total}`;
+      shiftCooldown(side.toUpperCase() + " Play");
+    }
+
+    function rollYardage() {
+      const yd = Math.ceil(Math.random() * 10);
+      document.getElementById('yardageResult').textContent = `Yardage: ${yd}`;
+    }
+  </script>
+</body>
+</html>
