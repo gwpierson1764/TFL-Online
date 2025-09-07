@@ -1,237 +1,1104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>TFL Prototype</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      height: 100vh;
-      flex-direction: row;
-      overflow: hidden;
-    }
-    .home, .visitor, .center {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 10px;
-    }
-    .home {
-      background: #003F87;
-      color: white;
-    }
-    .visitor {
-      background: #C8102E;
-      color: white;
-    }
-    .center {
-      background: white;
-      color: #003F87;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabletop Football League 2.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    h1 { margin: 10px 0; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: auto;
+        }
 
-    /* Momentum Circles */
-    .momentum {
-      display: flex;
-      gap: 5px;
-      margin: 10px 0;
-    }
-    .circle {
-      width: 20px;
-      height: 20px;
-      border: 2px solid white;
-      border-radius: 50%;
-      background: transparent;
-      cursor: pointer;
-    }
-    .circle.filled { background: white; }
+        .game-header {
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ffd700;
+        }
 
-    /* Possession Marker */
-    .possession { font-size: 2em; margin-left: 10px; }
+        .game-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+        }
 
-    button {
-      margin: 5px;
-      padding: 10px 20px;
-      font-size: 1em;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .home button { background: white; color: #003F87; }
-    .visitor button { background: white; color: #C8102E; }
-    .center button { background: #003F87; color: white; }
+        .game-phase {
+            background: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #ffd700;
+            font-weight: bold;
+        }
 
-    /* Field Tracker */
-    .field-container {
-      flex: 1;
-      width: 150px;
-      overflow-y: scroll;
-      border: 2px solid #003F87;
-      background: green;
-      position: relative;
-    }
-    .yardline {
-      position: relative;
-      height: 10px; /* 1 yard = 10px */
-      border-top: 1px solid white;
-    }
-    .yard-label {
-      position: absolute;
-      right: 2px;
-      top: -6px;
-      font-size: 0.7em;
-      color: white;
-    }
-    .hash {
-      position: absolute;
-      left: 25%;
-      width: 5px;
-      height: 1px;
-      background: white;
-      top: 0;
-    }
-    .hash.right {
-      left: 70%;
-    }
+        .game-container {
+            display: grid;
+            grid-template-areas: 
+                "opponent-hand opponent-hand opponent-hand"
+                "field field field"
+                "controls momentum dice"
+                "player-hand player-hand player-hand";
+            grid-template-rows: 160px 1fr 140px 160px;
+            grid-template-columns: 1fr 220px 320px;
+            height: calc(100vh - 60px);
+            gap: 10px;
+            padding: 10px;
+        }
 
-    .marker {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 4px;
-    }
-    .los { background: blue; }
-    .ltg { background: yellow; }
-  </style>
+        .player-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid;
+        }
+
+        .opponent-area {
+            grid-area: opponent-hand;
+            background: rgba(255, 0, 0, 0.1);
+            border-color: #ff4444;
+        }
+
+        .player-area.player {
+            grid-area: player-hand;
+            background: rgba(0, 255, 0, 0.1);
+            border-color: #44ff44;
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+        }
+
+        .player-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .possessions {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .formation-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0.9;
+        }
+
+        .formation-cards {
+            display: flex;
+            gap: 5px;
+        }
+
+        .play-card {
+            width: 70px;
+            height: 90px;
+            background: linear-gradient(135deg, #333, #555);
+            border: 2px solid #777;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .play-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        .play-card.selected {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            background: linear-gradient(135deg, #444, #666);
+        }
+
+        .play-card.staged {
+            border-color: #00ff00;
+            background: linear-gradient(135deg, #2d5016, #4a7c23);
+        }
+
+        .card-type {
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .card-name {
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .cap-tracker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .cap-display {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .cap-bar {
+            width: 80px;
+            height: 12px;
+            background: #333;
+            border: 1px solid #666;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .cap-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #44ff44, #ffd700, #ff4444);
+            transition: width 0.3s ease;
+        }
+
+        .field-area {
+            grid-area: field;
+            background: linear-gradient(90deg, #2d5016 0%, #4a7c23 50%, #2d5016 100%);
+            border: 3px solid white;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(90deg, 
+                    transparent 0px, 
+                    transparent calc(10% - 1px), 
+                    rgba(255,255,255,0.2) calc(10% - 1px), 
+                    rgba(255,255,255,0.2) 10%);
+        }
+
+        .field-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .line-of-scrimmage {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #ff0000;
+            box-shadow: 0 0 8px #ff0000;
+            left: var(--los-position, 40%);
+            transition: left 0.5s ease;
+        }
+
+        .first-down-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ffd700;
+            box-shadow: 0 0 6px #ffd700;
+            left: var(--first-down-position, 50%);
+            transition: left 0.5s ease;
+        }
+
+        .game-status {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ffd700;
+            min-width: 180px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .status-label {
+            opacity: 0.9;
+        }
+
+        .status-value {
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .formation-display {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+        }
+
+        .team-formation {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #666;
+            text-align: center;
+        }
+
+        .formation-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 25px);
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .player-position {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            border: 2px solid;
+        }
+
+        .offense-pos { 
+            background: #44ff44; 
+            color: black;
+            border-color: #33cc33;
+        }
+
+        .defense-pos { 
+            background: #ff4444; 
+            color: white;
+            border-color: #cc3333;
+        }
+
+        .controls-area {
+            grid-area: controls;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #666;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .cooldown-track {
+            display: flex;
+            gap: 8px;
+        }
+
+        .cooldown-slot {
+            width: 45px;
+            height: 60px;
+            border: 2px dashed #666;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .cooldown-slot.occupied {
+            background: #444;
+            border: 2px solid #888;
+            border-style: solid;
+        }
+
+        .slot-label {
+            font-size: 8px;
+            opacity: 0.7;
+            margin-bottom: 2px;
+        }
+
+        .momentum-area {
+            grid-area: momentum;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #666;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .momentum-display {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .momentum-token {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ffd700;
+            border: 2px solid #ffed4e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .momentum-token:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.5);
+        }
+
+        .momentum-token.spent {
+            background: #666;
+            border-color: #888;
+            color: #ccc;
+        }
+
+        .dice-area {
+            grid-area: dice;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #666;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .dice-comparison {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .dice-pool {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pool-title {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .dice-container {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .die {
+            width: 32px;
+            height: 32px;
+            background: #fff;
+            color: #000;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #ccc;
+        }
+
+        .die:hover {
+            transform: scale(1.1);
+        }
+
+        .die.rolling {
+            animation: rollAnimation 0.8s ease-in-out;
+        }
+
+        @keyframes rollAnimation {
+            0%, 100% { transform: rotateX(0deg) rotateY(0deg); }
+            25% { transform: rotateX(90deg) rotateY(45deg); }
+            50% { transform: rotateX(180deg) rotateY(90deg); }
+            75% { transform: rotateX(270deg) rotateY(135deg); }
+        }
+
+        .d4 { background: #ffcccb; border-color: #ff6b6b; }
+        .d6 { background: #c8e6c9; border-color: #66bb6a; }
+        .d8 { background: #c5cae9; border-color: #7986cb; }
+        .d10 { background: #fff9c4; border-color: #ffc107; }
+
+        .pool-total {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+
+        .dice-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .action-button:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .action-button:disabled {
+            background: #666;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-display {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .result-win {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #44ff44;
+            color: #44ff44;
+        }
+
+        .result-loss {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+
+        .section-header {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid #666;
+            padding-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
-  <!-- HOME -->
-  <div class="home">
-    <h1>HOME <span id="homePossession" class="possession"></span></h1>
-    <h1 id="homeScore">0</h1>
-    <div class="momentum" id="homeMomentum"></div>
-    <button onclick="togglePossession('home')">Possession</button>
-  </div>
+    <div class="game-header">
+        <div class="game-title">Tabletop Football League 2.0</div>
+        <div class="game-phase" id="gamePhase">Play Selection</div>
+    </div>
 
-  <!-- CENTER -->
-  <div class="center">
-    <img src="TFL_Logo.png" alt="TFL Logo" style="max-width:70%; margin:10px;">
-    <button onclick="flipCoin()">Flip Coin</button>
-    <p id="coinResult"></p>
-    <div class="field-container" id="fieldContainer"></div>
-  </div>
+    <div class="game-container">
+        <!-- Opponent Area -->
+        <div class="player-area opponent-area">
+            <div class="player-info">
+                <div class="player-name">Opponent</div>
+                <div class="possessions">Possessions: 2/2</div>
+            </div>
+            
+            <div class="formation-section">
+                <div class="section-title">Offense</div>
+                <div class="formation-cards">
+                    <div class="play-card" data-type="offense" data-formation="I-Form">
+                        <div class="card-type">OFF</div>
+                        <div class="card-name">I-Form Run</div>
+                    </div>
+                    <div class="play-card" data-type="offense" data-formation="Shotgun">
+                        <div class="card-type">OFF</div>
+                        <div class="card-name">Shotgun Pass</div>
+                    </div>
+                    <div class="play-card" data-type="offense" data-formation="Spread">
+                        <div class="card-type">OFF</div>
+                        <div class="card-name">Spread Quick</div>
+                    </div>
+                </div>
+            </div>
 
-  <!-- VISITOR -->
-  <div class="visitor">
-    <h1>VISITOR <span id="visitorPossession" class="possession"></span></h1>
-    <h1 id="visitorScore">0</h1>
-    <div class="momentum" id="visitorMomentum"></div>
-    <button onclick="togglePossession('visitor')">Possession</button>
-  </div>
+            <div class="formation-section">
+                <div class="section-title">Defense</div>
+                <div class="formation-cards">
+                    <div class="play-card" data-type="defense" data-formation="4-3">
+                        <div class="card-type">DEF</div>
+                        <div class="card-name">4-3 Base</div>
+                    </div>
+                    <div class="play-card" data-type="defense" data-formation="3-4">
+                        <div class="card-type">DEF</div>
+                        <div class="card-name">3-4 Over</div>
+                    </div>
+                    <div class="play-card" data-type="defense" data-formation="Nickel">
+                        <div class="card-type">DEF</div>
+                        <div class="card-name">Nickel Cover</div>
+                    </div>
+                </div>
+            </div>
 
-  <script>
-    // === Momentum Trackers ===
-    const maxMomentum = 5;
-    let momentum = { home: 0, visitor: 0 };
+            <div class="formation-section">
+                <div class="section-title">Blitz</div>
+                <div class="formation-cards">
+                    <div class="play-card" data-type="blitz" data-formation="Rush">
+                        <div class="card-type">BLTZ</div>
+                        <div class="card-name">Edge Rush</div>
+                    </div>
+                    <div class="play-card" data-type="blitz" data-formation="Cover">
+                        <div class="card-type">BLTZ</div>
+                        <div class="card-name">Cover Blitz</div>
+                    </div>
+                </div>
+            </div>
 
-    function renderMomentum(team) {
-      const container = document.getElementById(team + "Momentum");
-      container.innerHTML = "";
-      for (let i = 0; i < maxMomentum; i++) {
-        const circle = document.createElement("div");
-        circle.className = "circle";
-        if (i < momentum[team]) circle.classList.add("filled");
-        circle.onclick = () => spendMomentum(team);
-        container.appendChild(circle);
-      }
-    }
+            <div class="cap-tracker">
+                <div class="cap-display">Cap: 4/7</div>
+                <div class="cap-bar">
+                    <div class="cap-fill" style="width: 57%;"></div>
+                </div>
+            </div>
+        </div>
 
-    function gainMomentum(team) {
-      if (momentum[team] < maxMomentum) momentum[team]++;
-      renderMomentum(team);
-    }
+        <!-- Field Area -->
+        <div class="field-area">
+            <div class="field-lines"></div>
+            <div class="field-markers">
+                <div class="line-of-scrimmage" style="--los-position: 35%;"></div>
+                <div class="first-down-marker" style="--first-down-position: 45%;"></div>
+            </div>
+            
+            <div class="game-status">
+                <div class="status-row">
+                    <span class="status-label">Quarter:</span>
+                    <span class="status-value" id="quarter">1st</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Down:</span>
+                    <span class="status-value" id="downDistance">2nd & 7</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Ball at:</span>
+                    <span class="status-value" id="ballPosition">Own 33</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Score:</span>
+                    <span class="status-value" id="score">14-10</span>
+                </div>
+            </div>
 
-    function spendMomentum(team) {
-      if (momentum[team] > 0) {
-        momentum[team]--;
-        renderMomentum(team);
-      }
-    }
+            <div class="formation-display">
+                <div class="team-formation">
+                    <div class="formation-title">Your Offense</div>
+                    <div class="player-grid" id="offenseFormation">
+                        <div class="player-position offense-pos">WR</div>
+                        <div class="player-position offense-pos">OL</div>
+                        <div class="player-position offense-pos">WR</div>
+                        <div class="player-position offense-pos">RB</div>
+                        <div class="player-position offense-pos">QB</div>
+                        <div class="player-position offense-pos">OL</div>
+                    </div>
+                </div>
+                <div class="team-formation">
+                    <div class="formation-title">Opponent Defense</div>
+                    <div class="player-grid" id="defenseFormation">
+                        <div class="player-position defense-pos">DB</div>
+                        <div class="player-position defense-pos">LB</div>
+                        <div class="player-position defense-pos">DB</div>
+                        <div class="player-position defense-pos">DL</div>
+                        <div class="player-position defense-pos">LB</div>
+                        <div class="player-position defense-pos">DL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    // === Possession ===
-    function togglePossession(team) {
-      document.getElementById("homePossession").textContent = "";
-      document.getElementById("visitorPossession").textContent = "";
-      if (team === "home") document.getElementById("homePossession").textContent = "🏈";
-      else document.getElementById("visitorPossession").textContent = "🏈";
-    }
+        <!-- Controls Area -->
+        <div class="controls-area">
+            <div class="section-header">Cooldown Track</div>
+            <div class="cooldown-track">
+                <div class="cooldown-slot occupied">
+                    <div class="slot-label">Slot 1</div>
+                    <div>RB-1</div>
+                </div>
+                <div class="cooldown-slot occupied">
+                    <div class="slot-label">Slot 2</div>
+                    <div>WR-2</div>
+                </div>
+                <div class="cooldown-slot">
+                    <div class="slot-label">Slot 3</div>
+                </div>
+                <div class="cooldown-slot">
+                    <div class="slot-label">Slot 4</div>
+                </div>
+                <div class="cooldown-slot">
+                    <div class="slot-label">Slot 5</div>
+                </div>
+            </div>
+        </div>
 
-    // === Coin flip ===
-    function flipCoin() {
-      document.getElementById("coinResult").textContent =
-        Math.random() < 0.5 ? "Heads" : "Tails";
-    }
+        <!-- Momentum Area -->
+        <div class="momentum-area">
+            <div class="section-header">Momentum Tokens</div>
+            <div class="momentum-display">
+                <div class="momentum-token" title="Available Momentum">1</div>
+                <div class="momentum-token" title="Available Momentum">2</div>
+                <div class="momentum-token" title="Available Momentum">3</div>
+                <div class="momentum-token spent" title="Spent Momentum">4</div>
+                <div class="momentum-token spent" title="Spent Momentum">5</div>
+            </div>
+            <div style="font-size: 12px; opacity: 0.8;">Click to spend on PlayMaker Abilities</div>
+        </div>
 
-    // === Field Setup ===
-    let lineOfScrimmage = 20; // start at 20-yard line
-    let yardsToGain = 10;
-    let lineToGain = lineOfScrimmage + yardsToGain;
+        <!-- Dice Area -->
+        <div class="dice-area">
+            <div class="section-header">Dice Pools</div>
+            <div class="dice-comparison">
+                <div class="dice-pool">
+                    <div class="pool-title">Offense</div>
+                    <div class="dice-container">
+                        <div class="die d4" data-sides="4">3</div>
+                        <div class="die d6" data-sides="6">4</div>
+                        <div class="die d8" data-sides="8">7</div>
+                        <div class="die d10" data-sides="10">6</div>
+                    </div>
+                    <div class="pool-total">Total: 20</div>
+                </div>
+                <div class="dice-pool">
+                    <div class="pool-title">Defense</div>
+                    <div class="dice-container">
+                        <div class="die d4" data-sides="4">2</div>
+                        <div class="die d6" data-sides="6">5</div>
+                        <div class="die d8" data-sides="8">8</div>
+                    </div>
+                    <div class="pool-total">Total: 15</div>
+                </div>
+            </div>
+            
+            <div class="dice-controls">
+                <button class="action-button" id="rollDiceBtn" onclick="rollAllDice()">
+                    Roll Dice
+                </button>
+                <button class="action-button" id="resolvePlayBtn" onclick="resolvePlay()" disabled>
+                    Resolve Play
+                </button>
+            </div>
+            
+            <div class="result-display" id="playResult" style="display: none;"></div>
+        </div>
 
-    function buildField() {
-      const container = document.getElementById("fieldContainer");
-      container.innerHTML = "";
+        <!-- Player Area -->
+        <div class="player-area player">
+            <div class="player-info">
+                <div class="player-name">You</div>
+                <div class="possessions">Possessions: 1/2</div>
+            </div>
+            
+            <div class="formation-section">
+                <div class="section-title">Offense</div>
+                <div class="formation-cards">
+                    <div class="play-card selected" data-type="offense" data-formation="Shotgun">
+                        <div class="card-type">OFF</div>
+                        <div class="card-name">Shotgun Slant</div>
+                    </div>
+                    <div class="play-card" data-type="offense" data-formation="I-Form">
+                        <div class="card-type">OFF</div>
+                        <div class="card-name">I-Form Power</div>
+                    </div>
+                    <div class="play-card" data-type="offense" data-formation="Pistol">
+                        <div class="card-type">OFF</div>
+                        <div class="card-name">Pistol Read</div>
+                    </div>
+                </div>
+            </div>
 
-      for (let y = 0; y <= 100; y++) {
-        const div = document.createElement("div");
-        div.className = "yardline";
-        if (y % 5 === 0) {
-          const label = document.createElement("div");
-          label.className = "yard-label";
-          label.textContent = y;
-          div.appendChild(label);
+            <div class="formation-section">
+                <div class="section-title">Defense</div>
+                <div class="formation-cards">
+                    <div class="play-card" data-type="defense" data-formation="4-3">
+                        <div class="card-type">DEF</div>
+                        <div class="card-name">4-3 Under</div>
+                    </div>
+                    <div class="play-card" data-type="defense" data-formation="Dime">
+                        <div class="card-type">DEF</div>
+                        <div class="card-name">Dime Cover-2</div>
+                    </div>
+                    <div class="play-card" data-type="defense" data-formation="3-4">
+                        <div class="card-type">DEF</div>
+                        <div class="card-name">3-4 Contain</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="formation-section">
+                <div class="section-title">Blitz</div>
+                <div class="formation-cards">
+                    <div class="play-card" data-type="blitz" data-formation="Safety">
+                        <div class="card-type">BLTZ</div>
+                        <div class="card-name">Safety Blitz</div>
+                    </div>
+                    <div class="play-card" data-type="blitz" data-formation="Corner">
+                        <div class="card-type">BLTZ</div>
+                        <div class="card-name">Corner Fire</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cap-tracker">
+                <div class="cap-display">Cap: 4/7</div>
+                <div class="cap-bar">
+                    <div class="cap-fill" style="width: 57%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State Management
+        let gameState = {
+            phase: 'play-selection', // play-selection, dice-rolling, resolving
+            quarter: 1,
+            down: 2,
+            distance: 7,
+            ballPosition: 33,
+            score: { player: 14, opponent: 10 },
+            possessions: { player: 1, opponent: 2 },
+            momentum: { player: 3, opponent: 2 },
+            selectedPlays: { player: null, opponent: null },
+            diceRolled: false
+        };
+
+        // Initialize game
+        function initGame() {
+            updateGameDisplay();
+            setupCardHandlers();
+            updatePhaseDisplay();
         }
-        const hashLeft = document.createElement("div");
-        hashLeft.className = "hash";
-        div.appendChild(hashLeft);
-        const hashRight = document.createElement("div");
-        hashRight.className = "hash right";
-        div.appendChild(hashRight);
 
-        // Add LOS marker
-        if (y === lineOfScrimmage) {
-          const losMarker = document.createElement("div");
-          losMarker.className = "marker los";
-          div.appendChild(losMarker);
+        function updateGameDisplay() {
+            document.getElementById('quarter').textContent = gameState.quarter + 'st';
+            document.getElementById('downDistance').textContent = `${gameState.down}${getOrdinalSuffix(gameState.down)} & ${gameState.distance}`;
+            document.getElementById('ballPosition').textContent = `Own ${gameState.ballPosition}`;
+            document.getElementById('score').textContent = `${gameState.score.player}-${gameState.score.opponent}`;
         }
 
-        // Add LTG marker
-        if (y === lineToGain) {
-          const ltgMarker = document.createElement("div");
-          ltgMarker.className = "marker ltg";
-          div.appendChild(ltgMarker);
+        function getOrdinalSuffix(num) {
+            const suffixes = ['th', 'st', 'nd', 'rd'];
+            const remainder = num % 100;
+            return suffixes[(remainder - 20) % 10] || suffixes[remainder] || suffixes[0];
         }
 
-        container.appendChild(div);
-      }
+        function updatePhaseDisplay() {
+            const phaseElement = document.getElementById('gamePhase');
+            const phases = {
+                'play-selection': 'Play Selection',
+                'dice-rolling': 'Roll Dice',
+                'resolving': 'Resolving Play'
+            };
+            phaseElement.textContent = phases[gameState.phase] || 'Unknown';
+        }
 
-      // auto-scroll to show LOS ±10 and +20 yards
-      const scrollPos = Math.max(0, (lineOfScrimmage - 10) * 10);
-      container.scrollTop = scrollPos;
-    }
+        function setupCardHandlers() {
+            document.querySelectorAll('.play-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    // Only allow selection during play selection phase
+                    if (gameState.phase !== 'play-selection') return;
 
-    // === Initialize ===
-    renderMomentum("home");
-    renderMomentum("visitor");
-    buildField();
-  </script>
-</body>
-</html>
+                    // Remove selected class from siblings in same player area
+                    const parentArea = this.closest('.player-area');
+                    const sameTypeCards = parentArea.querySelectorAll(`.play-card[data-type="${this.dataset.type}"]`);
+                    sameTypeCards.forEach(c => c.classList.remove('selected'));
+                    
+                    // Add selected class to clicked card
+                    this.classList.add('selected');
+                    
+                    // Update game state
+                    const isPlayer = parentArea.classList.contains('player');
+                    const playerKey = isPlayer ? 'player' : 'opponent';
+                    
+                    if (!gameState.selectedPlays[playerKey]) {
+                        gameState.selectedPlays[playerKey] = {};
+                    }
+                    gameState.selectedPlays[playerKey][this.dataset.type] = {
+                        formation: this.dataset.formation,
+                        card: this
+                    };
+                    
+                    // Check if both players have selected appropriate plays
+                    checkPlaySelectionComplete();
+                });
+            });
+        }
+
+        function checkPlaySelectionComplete() {
+            // For now, just check if player has selected an offensive play
+            const playerOffenseSelected = document.querySelector('.player-area.player .play-card[data-type="offense"].selected');
+            
+            if (playerOffenseSelected) {
+                gameState.phase = 'dice-rolling';
+                updatePhaseDisplay();
+                document.getElementById('rollDiceBtn').disabled = false;
+            }
+        }
+
+        function rollAllDice() {
+            if (gameState.phase !== 'dice-rolling') return;
+            
+            const dice = document.querySelectorAll('.die');
+            document.getElementById('rollDiceBtn').disabled = true;
+            
+            // Add rolling animation
+            dice.forEach(die => {
+                die.classList.add('rolling');
+            });
+            
+            // Simulate rolling for each die
+            setTimeout(() => {
+                dice.forEach(die => {
+                    die.classList.remove('rolling');
+                    const sides = parseInt(die.dataset.sides);
+                    const roll = Math.floor(Math.random() * sides) + 1;
+                    die.textContent = roll;
+                });
+                
+                updateDiceTotals();
+                gameState.diceRolled = true;
+                gameState.phase = 'resolving';
+                updatePhaseDisplay();
+                document.getElementById('resolvePlayBtn').disabled = false;
+            }, 800);
+        }
+
+        function updateDiceTotals() {
+            const offenseDice = document.querySelectorAll('.dice-pool:first-child .die');
+            const defenseDice = document.querySelectorAll('.dice-pool:last-child .die');
+            
+            let offenseTotal = 0;
+            let defenseTotal = 0;
+            
+            offenseDice.forEach(die => offenseTotal += parseInt(die.textContent));
+            defenseDice.forEach(die => defenseTotal += parseInt(die.textContent));
+            
+            document.querySelector('.dice-pool:first-child .pool-total').textContent = `Total: ${offenseTotal}`;
+            document.querySelector('.dice-pool:last-child .pool-total').textContent = `Total: ${defenseTotal}`;
+            
+            return { offense: offenseTotal, defense: defenseTotal };
+        }
+
+        function resolvePlay() {
+            if (gameState.phase !== 'resolving' || !gameState.diceRolled) return;
+            
+            const totals = updateDiceTotals();
+            const resultElement = document.getElementById('playResult');
+            
+            // Basic TFL mechanic: offense >= defense = success
+            const success = totals.offense >= totals.defense;
+            
+            if (success) {
+                const yardageRoll = parseInt(document.querySelector('.die.d10').textContent);
+                const yardsGained = Math.max(1, yardageRoll - 3); // Simple yardage calculation
+                
+                resultElement.textContent = `SUCCESS! Gained ${yardsGained} yards`;
+                resultElement.className = 'result-display result-win';
+                
+                // Update field position
+                gameState.ballPosition += yardsGained;
+                gameState.distance -= yardsGained;
+                
+                if (gameState.distance <= 0) {
+                    // First down achieved
+                    gameState.down = 1;
+                    gameState.distance = 10;
+                    updateFieldMarkers();
+                } else {
+                    gameState.down++;
+                }
+                
+                // Add momentum for successful play
+                if (gameState.momentum.player < 5) {
+                    gameState.momentum.player++;
+                    updateMomentumDisplay();
+                }
+            } else {
+                const yardsLost = Math.max(0, Math.floor((totals.defense - totals.offense) / 2));
+                
+                if (yardsLost > 0) {
+                    resultElement.textContent = `TFL! Lost ${yardsLost} yards`;
+                    gameState.ballPosition -= yardsLost;
+                    gameState.distance += yardsLost;
+                } else {
+                    resultElement.textContent = `INCOMPLETE - No gain`;
+                }
+                
+                resultElement.className = 'result-display result-loss';
+                gameState.down++;
+                
+                // Lose momentum for failed play
+                if (gameState.momentum.player > 0) {
+                    gameState.momentum.player--;
+                    updateMomentumDisplay();
+                }
+            }
+            
+            resultElement.style.display = 'block';
+            updateGameDisplay();
+            updateFieldMarkers();
+            advanceCooldownTrack();
+            
+            // Prepare for next play
+            setTimeout(() => {
+                resetForNextPlay();
+            }, 3000);
+        }
+
+        function updateFieldMarkers() {
+            const losPosition = Math.max(10, Math.min(90, gameState.ballPosition));
+            const firstDownPosition = Math.max(10, Math.min(90, gameState.ballPosition + gameState.distance));
+            
+            document.querySelector('.line-of-scrimmage').style.setProperty('--los-position', losPosition + '%');
+            document.querySelector('.first-down-marker').style.setProperty('--first-down-position', firstDownPosition + '%');
+        }
+
+        function updateMomentumDisplay() {
+            const tokens = document.querySelectorAll('.momentum-token');
+            tokens.forEach((token, index) => {
+                if (index < gameState.momentum.player) {
+                    token.classList.remove('spent');
+                } else {
+                    token.classList.add('spent');
+                }
+            });
+        }
+
+        function advanceCooldownTrack() {
+            const slots = document.querySelectorAll('.cooldown-slot');
+            
+            // Move cards through cooldown track
+            for (let i = 0; i < slots.length - 1; i++) {
+                const currentSlot = slots[i];
+                const nextSlot = slots[i + 1];
+                
+                if (nextSlot.classList.contains('occupied')) {
+                    currentSlot.innerHTML = nextSlot.innerHTML;
+                    currentSlot.classList.add('occupied');
+                } else {
+                    currentSlot.innerHTML = '<div class="slot-label">Slot ' + (i + 1) + '</div>';
+                    currentSlot.classList.remove('occupied');
+                }
+            }
+            
+            // Add current play to slot 5
+            const lastSlot = slots[slots.length - 1];
+            lastSlot.innerHTML = '<div class="slot-label">Slot 5</div><div>Last Play</div>';
+            lastSlot.classList.add('occupied');
+        }
+
+        function resetForNextPlay() {
+            // Clear selections
+            document.querySelectorAll('.play-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Reset game state
+            gameState.phase = 'play-selection';
+            gameState.selectedPlays = { player: null, opponent: null };
+            gameState.diceRolled = false;
+            
+            // Reset UI
+            updatePhaseDisplay();
+            document.getElementById('rollDiceBtn').disabled = true;
+            document.getElementById('resolvePlayBtn').disabled = true;
+            document.getElementById('playResult').style.display = 'none';
+            
+            // Check for turnover on downs
+            if (gameState.down > 4) {
+                handleTurnover();
+            }
+        }
+
+        function handleTurnover() {
+            alert('Turnover on downs!');
+            // Reset down and distance, switch possession
+            gameState.down = 1;
+            gameState.distance = 10;
+            // In a full implementation, would switch which player is on offense
+        }
+
+        // Momentum token interactions
+        document.querySelectorAll('.momentum-token').forEach(token => {
+            token.addEventListener('click', function() {
+                if (!this.classList.contains('spent') && gameState.phase === 'resolving') {
+                    // Spend momentum for PlayMaker Ability
+                    this.classList.add('spent');
+                    gameState.momentum.player--;
+                    
+                    // In full implementation, would trigger PMA selection
+                    alert('Momentum spent on PlayMaker Ability! (Feature coming soon)');
+                }
+            });
+        });
+
+        // Initialize the game when page loads
+        document.addEventListener('DOMContentLoaded', initGame);
