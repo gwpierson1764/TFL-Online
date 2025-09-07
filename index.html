@@ -58,7 +58,6 @@
     /* Possession Marker */
     .possession { font-size: 2em; margin-left: 10px; }
 
-    /* Buttons */
     button {
       margin: 5px;
       padding: 10px 20px;
@@ -119,16 +118,7 @@
   <div class="home">
     <h1>HOME <span id="homePossession" class="possession"></span></h1>
     <h1 id="homeScore">0</h1>
-    <div class="momentum">
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-    </div>
-    <button onclick="score('home',6)">Touchdown (+6)</button>
-    <button onclick="score('home',3)">Field Goal (+3)</button>
-    <button onclick="score('home',2)">Safety (+2)</button>
+    <div class="momentum" id="homeMomentum"></div>
     <button onclick="togglePossession('home')">Possession</button>
   </div>
 
@@ -144,24 +134,40 @@
   <div class="visitor">
     <h1>VISITOR <span id="visitorPossession" class="possession"></span></h1>
     <h1 id="visitorScore">0</h1>
-    <div class="momentum">
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-      <div class="circle" onclick="toggleCircle(this)"></div>
-    </div>
-    <button onclick="score('visitor',6)">Touchdown (+6)</button>
-    <button onclick="score('visitor',3)">Field Goal (+3)</button>
-    <button onclick="score('visitor',2)">Safety (+2)</button>
+    <div class="momentum" id="visitorMomentum"></div>
     <button onclick="togglePossession('visitor')">Possession</button>
   </div>
 
   <script>
-    // Momentum toggle
-    function toggleCircle(el) { el.classList.toggle("filled"); }
+    // === Momentum Trackers ===
+    const maxMomentum = 5;
+    let momentum = { home: 0, visitor: 0 };
 
-    // Possession toggle
+    function renderMomentum(team) {
+      const container = document.getElementById(team + "Momentum");
+      container.innerHTML = "";
+      for (let i = 0; i < maxMomentum; i++) {
+        const circle = document.createElement("div");
+        circle.className = "circle";
+        if (i < momentum[team]) circle.classList.add("filled");
+        circle.onclick = () => spendMomentum(team);
+        container.appendChild(circle);
+      }
+    }
+
+    function gainMomentum(team) {
+      if (momentum[team] < maxMomentum) momentum[team]++;
+      renderMomentum(team);
+    }
+
+    function spendMomentum(team) {
+      if (momentum[team] > 0) {
+        momentum[team]--;
+        renderMomentum(team);
+      }
+    }
+
+    // === Possession ===
     function togglePossession(team) {
       document.getElementById("homePossession").textContent = "";
       document.getElementById("visitorPossession").textContent = "";
@@ -169,24 +175,21 @@
       else document.getElementById("visitorPossession").textContent = "🏈";
     }
 
-    // Coin flip
+    // === Coin flip ===
     function flipCoin() {
       document.getElementById("coinResult").textContent =
         Math.random() < 0.5 ? "Heads" : "Tails";
     }
 
-    // Score and possessions
-    function score(team, points) {
-      let scoreEl = document.getElementById(team + "Score");
-      let score = parseInt(scoreEl.textContent);
-      scoreEl.textContent = score + points;
-      togglePossession(team === "home" ? "visitor" : "home");
-    }
+    // === Field Setup ===
+    let lineOfScrimmage = 20; // start at 20-yard line
+    let yardsToGain = 10;
+    let lineToGain = lineOfScrimmage + yardsToGain;
 
-    // Build full 100-yard field with labels and hash marks
     function buildField() {
       const container = document.getElementById("fieldContainer");
       container.innerHTML = "";
+
       for (let y = 0; y <= 100; y++) {
         const div = document.createElement("div");
         div.className = "yardline";
@@ -202,10 +205,32 @@
         const hashRight = document.createElement("div");
         hashRight.className = "hash right";
         div.appendChild(hashRight);
+
+        // Add LOS marker
+        if (y === lineOfScrimmage) {
+          const losMarker = document.createElement("div");
+          losMarker.className = "marker los";
+          div.appendChild(losMarker);
+        }
+
+        // Add LTG marker
+        if (y === lineToGain) {
+          const ltgMarker = document.createElement("div");
+          ltgMarker.className = "marker ltg";
+          div.appendChild(ltgMarker);
+        }
+
         container.appendChild(div);
       }
+
+      // auto-scroll to show LOS ±10 and +20 yards
+      const scrollPos = Math.max(0, (lineOfScrimmage - 10) * 10);
+      container.scrollTop = scrollPos;
     }
 
+    // === Initialize ===
+    renderMomentum("home");
+    renderMomentum("visitor");
     buildField();
   </script>
 </body>
